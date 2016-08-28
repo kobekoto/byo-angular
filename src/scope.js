@@ -9,10 +9,15 @@ function Scope() {
     this.$$watchers = [];
 }
 
+function initWatchVal() {
+
+}
+
 Scope.prototype.$watch = function(watchFn, listenerFn) {
     var watcher = {
         watchFn: watchFn,
-        listenerFn: listenerFn
+        listenerFn: listenerFn,
+        last: initWatchVal
     };
     // Each $watch pushes the watch and listenerFn to the array of $$watchers
     this.$$watchers.push(watcher);
@@ -26,14 +31,15 @@ Scope.prototype.$digest = function() {
     _.forEach(this.$$watchers, function(watcher) {
         // So when we call the following line self is referring to scope
         newValue = watcher.watchFn(self);
-        // on first iteration oldValue is null
+        // on first iteration oldValue is null, this is why when we call scope.$digest
+        // in our test suite scope.counter++ increments because scope is NOT null
         oldValue = watcher.last;
         // Here we compare newValue to oldValue
         if (newValue !== oldValue) {
             // if newValue is not equal to oldValue, we set watcher.last to newValue
             watcher.last = newValue;
-            // If the values differ we call the listener function on the watcher
-            watcher.listenerFn(newValue, oldValue, self);
+            // Here we're checking to see if the old value is the inital value and replacing if it is
+            watcher.listenerFn(newValue, (oldValue === initWatchVal ? newValue : oldValue), self);
         }
     });
 };

@@ -83,7 +83,7 @@ describe('Scope', function() {
 
             // We change scope.someValue here
             scope.someValue = 'b';
-            //scope.counter doesn't change because scope.watch nor scope.$digest have changed.
+            //scope.counter doesn't change because scope.watch nor scope.$digest have been run.
             expect(scope.counter).toBe(1);
 
             scope.$digest();
@@ -92,6 +92,43 @@ describe('Scope', function() {
 
         });
 
+        // Here we are testing to see that we call the listener function 
+        // even if the first legitimate value is undefined. Remember - from the last test 
+        // watcher.last is always undefined initially.
+        it('calls listener when watch value is first undefined', function() {
+            scope.counter = 0;
+
+            scope.$watch(
+                function(scope) {
+                    return scope.someValue;
+                },
+                function(newValue, oldValue, scope) {
+                    scope.counter++;
+                }
+            );
+
+            scope.$digest();
+            // The test will pass once we initialize watcher.last attribute to something unique
+            expect(scope.counter).toBe(1);
+        });
+
+        it('calls the listener with new value as old value the first time', function() {
+            scope.someValue = 123;
+            var oldValueGiven;
+
+            scope.$watch(
+                function(scope) {
+                    return scope.someValue;
+                },
+                function(newValue, oldValue, scope) {
+                    
+                    oldValueGiven = oldValue;
+                }
+            );
+
+            scope.$digest();
+            expect(oldValueGiven).toBe(123);
+        });
 
     });
 
