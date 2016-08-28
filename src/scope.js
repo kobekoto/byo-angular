@@ -20,8 +20,21 @@ Scope.prototype.$watch = function(watchFn, listenerFn) {
 
 //Loops over each watcher and calls the listenerFn
 Scope.prototype.$digest = function() {
+    // self in this instance is scope
+    var self = this;
+    var newValue, oldValue;
     _.forEach(this.$$watchers, function(watcher) {
-        watcher.listenerFn();
+        // So when we call the following line self is referring to scope
+        newValue = watcher.watchFn(self);
+        // on first iteration oldValue is null
+        oldValue = watcher.last;
+        // Here we compare newValue to oldValue
+        if (newValue !== oldValue) {
+            // if newValue is not equal to oldValue, we set watcher.last to newValue
+            watcher.last = newValue;
+            // If the values differ we call the listener function on the watcher
+            watcher.listenerFn(newValue, oldValue, self);
+        }
     });
 };
 
