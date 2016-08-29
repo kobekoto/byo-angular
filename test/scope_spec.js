@@ -121,7 +121,7 @@ describe('Scope', function() {
                     return scope.someValue;
                 },
                 function(newValue, oldValue, scope) {
-                    
+
                     oldValueGiven = oldValue;
                 }
             );
@@ -129,6 +129,62 @@ describe('Scope', function() {
             scope.$digest();
             expect(oldValueGiven).toBe(123);
         });
+
+        it('may have watchers that omit the listener function', function() {
+            var watchFn = jasmine.createSpy().and.returnValue('something');
+            //Usually we call $watch with watchFn and listenerFn
+            // because we've omitted listenerFn here, when we call $scope.watch and it's
+            // missing the listenerFn as an argument, it will throw an exception
+            scope.$watch(watchFn);
+
+            scope.$digest();
+
+            expect(watchFn).toHaveBeenCalled();
+        });
+
+        it('triggers chained watchers in the same digest', function() {
+            scope.name = 'Jane';
+
+            scope.$watch(
+                function(scope) {
+                    // scope.nameUpper is being watched here, but this is after we watch scope.name
+                    // Note: this is what we're expecting
+                    return scope.nameUpper;
+                },
+                function(newValue, oldValue, scope) {
+                    if (newValue) {
+                        // the listenerFn assigns initial based on scope.nameUpper as that's the watchFn
+                        scope.initial = newValue.substring(0, 1) + '.';
+                    }
+                }
+            );
+
+            scope.$watch(
+                function(scope) {
+                    // scope.name is being watched her
+                    return scope.name;
+                },
+                function(newValue, oldValue, scope) {
+                    if (newValue) {
+                        // when scope.name is being watched we are uppercasing scope.nameUpper 
+                        // which in turn eventually updates scope.initial
+                        scope.nameUpper = newValue.toUpperCase();
+                    }
+                }
+            );
+
+            scope.$digest();
+            expect(scope.initial).toBe('J.');
+
+            scope.name = 'Bob';
+            scope.$digest();
+            // Because we've run digest scope.nameUpper will be uppercased
+            // scope.initial is now B because scope.nameUpper is BOB
+            expect(scope.initial).toBe('B.');
+
+        });
+
+
 
     });
 

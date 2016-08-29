@@ -16,7 +16,8 @@ function initWatchVal() {
 Scope.prototype.$watch = function(watchFn, listenerFn) {
     var watcher = {
         watchFn: watchFn,
-        listenerFn: listenerFn,
+        // Here we adding support to the watcher in case listenerFn is omitted
+        listenerFn: listenerFn || function() { },
         last: initWatchVal
     };
     // Each $watch pushes the watch and listenerFn to the array of $$watchers
@@ -24,10 +25,10 @@ Scope.prototype.$watch = function(watchFn, listenerFn) {
 };
 
 //Loops over each watcher and calls the listenerFn
-Scope.prototype.$digest = function() {
+Scope.prototype.$$digestOnce = function() {
     // self in this instance is scope
     var self = this;
-    var newValue, oldValue;
+    var newValue, oldValue, dirty;
     _.forEach(this.$$watchers, function(watcher) {
         // So when we call the following line self is referring to scope
         newValue = watcher.watchFn(self);
@@ -40,8 +41,19 @@ Scope.prototype.$digest = function() {
             watcher.last = newValue;
             // Here we're checking to see if the old value is the inital value and replacing if it is
             watcher.listenerFn(newValue, (oldValue === initWatchVal ? newValue : oldValue), self);
+            // We set dirty to true here because this will let us know if we have actually done some dirtyChecking
+            dirty = true;
         }
     });
+    // If dirty returns false, it means there was no dirty checking
+    return dirty;
+};
+
+Scope.prototype.$digest = function() {
+    var dirty;
+    do {
+        dirty = this.$$digestOnce;
+    } while (dirty);
 };
 
 module.exports = Scope;
