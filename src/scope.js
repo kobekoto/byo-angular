@@ -51,6 +51,9 @@ Scope.prototype.$$digestOnce = function() {
 
 Scope.prototype.$digest = function() {
     var dirty;
+    // The do-while loop ensures that we run $$digestOnce at least once
+    // The do-while loop keeps running until none of the watched values change
+    // as $$digestOnce either returns true or false depending on dirty checking
     do {
         dirty = this.$$digestOnce;
     } while (dirty);
