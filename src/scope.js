@@ -24,6 +24,7 @@ Scope.prototype.$watch = function(watchFn, listenerFn) {
     };
     // Each $watch pushes the watch and listenerFn to the array of $$watchers
     this.$$watchers.push(watcher);
+    this.$$lastDirtyWatch = null;
 };
 
 //Loops over each watcher and calls the listenerFn
@@ -62,11 +63,12 @@ Scope.prototype.$digest = function() {
     // that we'll keep the digest loop running for.
     var ttl = 10;
     var dirty;
+    this.$$lastDirtyWatch = null;
     // The do-while loop ensures that we run $$digestOnce at least once
     // The do-while loop keeps running until none of the watched values change
     // as $$digestOnce either returns true or false depending on dirty checking
     do {
-        dirty = this.$$digestOnce;
+        dirty = this.$$digestOnce();
         // If scope is still dirty checking & ttl has hit 0
         // throw an exception
         if (dirty && !(ttl--)) {

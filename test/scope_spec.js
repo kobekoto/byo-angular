@@ -43,7 +43,7 @@ describe('Scope', function() {
         it('calls the watch function with the scope as the argument', function() {
             // creates a mock function that has the ability to be called.
             var watchFn = jasmine.createSpy();
-            var listenerFn = function() { };
+            var listenerFn = function() {};
             scope.$watch(watchFn, listenerFn);
 
             scope.$digest();
@@ -59,8 +59,8 @@ describe('Scope', function() {
             scope.$watch(
                 // scope.someValue is being watched
                 // remember this is the watchFn
-                function(scope) { 
-                    return scope.someValue; 
+                function(scope) {
+                    return scope.someValue;
                 },
                 // when scope.someValue changes we increment scope.counter
                 // remember this is the listener fn
@@ -253,6 +253,31 @@ describe('Scope', function() {
 
         });
 
+        it('does not end digest so that new watches are not run', function() {
+
+            scope.aValue = 'abc';
+            scope.counter = 0;
+
+            scope.$watch(
+                function(scope) {
+                    return scope.aValue;
+                },
+                function(newValue, oldValue, scope) {
+                    // Here we are adding a watch from the listener of another watch
+                    scope.$watch(
+                        function(scope) {
+                            return scope.aValue;
+                        },
+                        function(newValue, oldValue, scope) {
+                            scope.counter++;
+                        }
+                    );
+                }
+            );
+
+            scope.$digest();
+            expect(scope.counter).toBe(1);
+        });
 
     });
 
