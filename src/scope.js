@@ -7,6 +7,8 @@ function Scope() {
     // $$ before watchers means that $$watchers should be considered private 
     // to the Angular framework and not be called from the app code.
     this.$$watchers = [];
+    // this.$$lastDirtyWatch is meant to keep track of 
+    this.$$lastDirtyWatch = null;
 }
 
 function initWatchVal() {
@@ -37,12 +39,18 @@ Scope.prototype.$$digestOnce = function() {
         oldValue = watcher.last;
         // Here we compare newValue to oldValue
         if (newValue !== oldValue) {
+            // we are assigning the watcher to $$lastDirtyWatch on the scope
+            self.$$lastDirtyWatch = watcher;
             // if newValue is not equal to oldValue, we set watcher.last to newValue
             watcher.last = newValue;
             // Here we're checking to see if the old value is the inital value and replacing if it is
             watcher.listenerFn(newValue, (oldValue === initWatchVal ? newValue : oldValue), self);
             // We set dirty to true here because this will let us know if we have actually done some dirtyChecking
             dirty = true;
+            // If the current watcher is equal to our last dirty watch, let's stop iterating
+            // over watches
+        } else if (self.$$lastDirtyWatch === watcher) {
+            return false;
         }
     });
     // If dirty returns false, it means there was no dirty checking

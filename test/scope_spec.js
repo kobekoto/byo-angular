@@ -1,5 +1,6 @@
 'use strict';
 
+var _ = require('lodash');
 var Scope = require('../src/scope');
 
 describe('Scope', function() {
@@ -215,6 +216,40 @@ describe('Scope', function() {
             // each other this test will never stop running
 
             expect((function() { scope.$digest(); })).toThrow();
+
+        });
+
+        it('ends the digest when the last watch is clean', function() {
+
+            // Creates an array 0 to 99;
+            scope.array = _.range(100);
+            var watchExecutions = 0;
+
+            // Then we attach 100 watches, with each of them watching a single item 
+            // in the array. 
+            _.times(100, function(i) {
+                scope.$watch(
+                    function(scope) {
+                        // watchExecutions keeps track of how many times we've 
+                        // executed a watcher
+                        watchExecutions++;
+                        return scope.array[i];
+                    },
+                    function(newValue, oldValue, scope) {
+
+                    }
+                );
+            });
+
+            // TODO: Explain why in-depth the scope.$digest runs scope.$watch twice here
+            scope.$digest();
+            expect(watchExecutions).toBe(200);
+
+            scope.array[0] = 420;
+            scope.$digest();
+            // Here we are expecting watchExecutions to equal 301 instead of the usual expectation 
+            // that it would equal 400 because scope.$watch is run twice
+            expect(watchExecutions).toBe(301);
 
         });
 
