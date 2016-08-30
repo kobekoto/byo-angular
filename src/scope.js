@@ -50,12 +50,20 @@ Scope.prototype.$$digestOnce = function() {
 };
 
 Scope.prototype.$digest = function() {
+    // TTL stands for time to live, which is basically the maximum amount of iterations
+    // that we'll keep the digest loop running for.
+    var ttl = 10;
     var dirty;
     // The do-while loop ensures that we run $$digestOnce at least once
     // The do-while loop keeps running until none of the watched values change
     // as $$digestOnce either returns true or false depending on dirty checking
     do {
         dirty = this.$$digestOnce;
+        // If scope is still dirty checking & ttl has hit 0
+        // throw an exception
+        if (dirty && !(ttl--)) {
+            throw '10 digest iterations reached';
+        }
     } while (dirty);
 };
 

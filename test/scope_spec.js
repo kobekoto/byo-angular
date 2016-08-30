@@ -184,6 +184,39 @@ describe('Scope', function() {
 
         });
 
+        it('gives up on the watches after 10 iterations', function() {
+            scope.counterA = 0;
+            scope.counterB = 0;
+
+            scope.$watch(
+                function(scope) {
+                    // Step 1: 1st iteration scope.counterA is 0
+                    // Step 5: scope.counter A is 1 and so forth...
+                    return scope.counterA;
+                },
+                function(newValue, oldValue, scope) {
+                    // Step 2: counterB will increment once
+                    scope.counterB++;
+                }
+            );
+
+            scope.$watch(
+                function(scope) {
+                    // Step 3: counterB is now 1
+                    return scope.counterB;
+                },
+                function(newValue, oldValue, scope) {
+                    // Step 4: scope.counterA will increment 1
+                    scope.counterA++;
+                }
+            );
+
+            // Repeat Steps 1-5, meaning really because the two functions are watching 
+            // each other this test will never stop running
+
+            expect((function() { scope.$digest(); })).toThrow();
+
+        });
 
 
     });
