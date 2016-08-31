@@ -304,6 +304,85 @@ describe('Scope', function() {
             expect(scope.counter).toBe(2);
         });
 
+        it('correctly handles NaNs', function() {
+            // Anything divided by 0 in JS is NaN
+            scope.number = 0/0; // NaN
+            scope.counter = 0;
+
+            scope.$watch(
+                function(scope) {
+                    return scope.number;
+                },
+                function(newValue, oldValue, scope) {
+                    scope.counter++;
+                }
+            );
+
+            scope.$digest();
+            expect(scope.counter).toBe(1);
+
+            scope.$digest();
+            expect(scope.counter).toBe(1);
+        });
+
+        it('catches exceptions in watch functions and continues', function() {
+            scope.aValue = 'abc';
+            scope.counter = 0;
+
+            // Here we have two watches because we want to make sure that we catch
+            // the exceptions and execute the second watch
+
+            scope.$watch(
+                function(scope) {
+                    throw 'Error';
+                },
+                function(newValue, oldValue, scope) {
+
+                }
+            );
+            scope.$watch(
+                function(scope) {
+                    return scope.aValue;
+                },
+                function(newValue, oldValue, scope) {
+                    scope.counter++;
+                }
+            );
+
+            scope.$digest();
+            expect(scope.counter).toBe(1);
+        });
+
+        it('catches exceptions in listener functions and continues', function() {
+            scope.aValue = 'abc';
+            scope.counter = 0;
+
+            // Here we have two watches because we want to make sure that we catch
+            // the exceptions and execute the second watch
+
+            scope.$watch(
+                function(scope) {
+                    return scope.aValue;
+                },
+                function(newValue, oldValue, scope) {
+                    throw 'Error';
+                }
+            );
+
+            scope.$watch(
+                function(scope) {
+                    return scope.aValue;
+                },
+                function(newValue, oldValue, scope) {
+                    scope.counter++;
+                }
+            );
+
+            scope.$digest();
+            expect(scope.counter).toBe(1);
+
+        });
+
     });
 
 });

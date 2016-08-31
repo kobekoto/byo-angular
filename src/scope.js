@@ -19,7 +19,7 @@ Scope.prototype.$watch = function(watchFn, listenerFn, valueEq) {
     var watcher = {
         watchFn: watchFn,
         // Here we adding support to the watcher in case listenerFn is omitted
-        listenerFn: listenerFn || function() { },
+        listenerFn: listenerFn || function() {},
         // !! to force it to be a boolean
         // we could have also used new Boolean but that's unnecessary
         valueEq: !!valueEq,
@@ -38,31 +38,36 @@ Scope.prototype.$$digestOnce = function() {
     var self = this;
     var newValue, oldValue, dirty;
     _.forEach(this.$$watchers, function(watcher) {
-        // So when we call the following line self is referring to scope
-        newValue = watcher.watchFn(self);
-        // on first iteration oldValue is null, this is why when we call scope.$digest
-        // in our test suite scope.counter++ increments because scope is NOT null
-        oldValue = watcher.last;
+        // We wrap the $$digestOnce function in a try-catch blog to catch exceptions
+        try {
+            // So when we call the following line self is referring to scope
+            newValue = watcher.watchFn(self);
+            // on first iteration oldValue is null, this is why when we call scope.$digest
+            // in our test suite scope.counter++ increments because scope is NOT null
+            oldValue = watcher.last;
 
-        // Here we are doing a deep value check of newValue and oldValue to see if they are equal,
-        // in addition we're passing the boolean flag to scope.prototype.$$isEqual
+            // Here we are doing a deep value check of newValue and oldValue to see if they are equal,
+            // in addition we're passing the boolean flag to scope.prototype.$$isEqual
 
-        if (!self.$$areEqual(newValue, oldValue, watcher.valueEq)) {
+            if (!self.$$areEqual(newValue, oldValue, watcher.valueEq)) {
 
-            // we are assigning the watcher to $$lastDirtyWatch on the scope
-            self.$$lastDirtyWatch = watcher;
-    
-            // Now we're making a deep clone of newValue because we're checking objects 
-            // by value, not reference
-            watcher.last = (watcher.valueEq ? _.cloneDeep(newValue) : newValue);
-            // Here we're checking to see if the old value is the inital value and replacing if it is
-            watcher.listenerFn(newValue, (oldValue === initWatchVal ? newValue : oldValue), self);
-            // We set dirty to true here because this will let us know if we have actually done some dirtyChecking
-            dirty = true;
-            // If the current watcher is equal to our last dirty watch, let's stop iterating
-            // over watches
-        } else if (self.$$lastDirtyWatch === watcher) {
-            return false;
+                // we are assigning the watcher to $$lastDirtyWatch on the scope
+                self.$$lastDirtyWatch = watcher;
+
+                // Now we're making a deep clone of newValue because we're checking objects 
+                // by value, not reference
+                watcher.last = (watcher.valueEq ? _.cloneDeep(newValue) : newValue);
+                // Here we're checking to see if the old value is the inital value and replacing if it is
+                watcher.listenerFn(newValue, (oldValue === initWatchVal ? newValue : oldValue), self);
+                // We set dirty to true here because this will let us know if we have actually done some dirtyChecking
+                dirty = true;
+                // If the current watcher is equal to our last dirty watch, let's stop iterating
+                // over watches
+            } else if (self.$$lastDirtyWatch === watcher) {
+                return false;
+            }
+        } catch(e) {
+            console.error(e);
         }
     });
     // If dirty returns false, it means there was no dirty checking
@@ -92,7 +97,8 @@ Scope.prototype.$$areEqual = function(newValue, oldValue, valueEq) {
     if (valueEq) {
         return _.isEqual(newValue, oldValue);
     } else {
-        return newValue === oldValue;
+        return newValue === oldValue || (typeof newValue === 'number' &&
+            typeof oldValue === 'number' && isNaN(newValue) && isNaN(oldValue));
     }
 };
 
