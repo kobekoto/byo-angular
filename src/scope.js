@@ -15,15 +15,20 @@ function initWatchVal() {
 
 }
 
-Scope.prototype.$watch = function(watchFn, listenerFn) {
+Scope.prototype.$watch = function(watchFn, listenerFn, valueEq) {
     var watcher = {
         watchFn: watchFn,
         // Here we adding support to the watcher in case listenerFn is omitted
         listenerFn: listenerFn || function() { },
+        // !! to force it to be a boolean
+        // we could have also used new Boolean but that's unnecessary
+        valueEq: !!valueEq,
         last: initWatchVal
     };
     // Each $watch pushes the watch and listenerFn to the array of $$watchers
     this.$$watchers.push(watcher);
+    // TODO: Give a better explanation
+    // We're resetting $$lastDirtyWatch when a watch is added.    
     this.$$lastDirtyWatch = null;
 };
 
@@ -38,12 +43,18 @@ Scope.prototype.$$digestOnce = function() {
         // on first iteration oldValue is null, this is why when we call scope.$digest
         // in our test suite scope.counter++ increments because scope is NOT null
         oldValue = watcher.last;
-        // Here we compare newValue to oldValue
-        if (newValue !== oldValue) {
+
+        // Here we are doing a deep value check of newValue and oldValue to see if they are equal,
+        // in addition we're passing the boolean flag to scope.prototype.$$isEqual
+
+        if (!self.$$areEqual(newValue, oldValue, watcher.valueEq)) {
+
             // we are assigning the watcher to $$lastDirtyWatch on the scope
             self.$$lastDirtyWatch = watcher;
-            // if newValue is not equal to oldValue, we set watcher.last to newValue
-            watcher.last = newValue;
+    
+            // Now we're making a deep clone of newValue because we're checking objects 
+            // by value, not reference
+            watcher.last = (watcher.valueEq ? _.cloneDeep(newValue) : newValue);
             // Here we're checking to see if the old value is the inital value and replacing if it is
             watcher.listenerFn(newValue, (oldValue === initWatchVal ? newValue : oldValue), self);
             // We set dirty to true here because this will let us know if we have actually done some dirtyChecking
@@ -75,6 +86,14 @@ Scope.prototype.$digest = function() {
             throw '10 digest iterations reached';
         }
     } while (dirty);
+};
+
+Scope.prototype.$$areEqual = function(newValue, oldValue, valueEq) {
+    if (valueEq) {
+        return _.isEqual(newValue, oldValue);
+    } else {
+        return newValue === oldValue;
+    }
 };
 
 module.exports = Scope;
