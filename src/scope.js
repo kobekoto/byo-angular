@@ -16,6 +16,7 @@ function initWatchVal() {
 }
 
 Scope.prototype.$watch = function(watchFn, listenerFn, valueEq) {
+    var self = this;
     var watcher = {
         watchFn: watchFn,
         // Here we adding support to the watcher in case listenerFn is omitted
@@ -30,6 +31,12 @@ Scope.prototype.$watch = function(watchFn, listenerFn, valueEq) {
     // TODO: Give a better explanation
     // We're resetting $$lastDirtyWatch when a watch is added.    
     this.$$lastDirtyWatch = null;
+    return function() {
+        var index = self.$$watchers.indexOf(watcher);
+        if (index >= 0) {
+            self.$$watchers.splice(index, 1);
+        }
+    };
 };
 
 //Loops over each watcher and calls the listenerFn
